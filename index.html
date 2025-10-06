@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <title>3D Dragon Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #controls {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    #loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #ff4500;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="loader"></div>
+    <div>Loading 3D Dragon Game...</div>
+  </div>
+  
+  <div id="info">Score: <span id="score">0</span> | Health: <span id="health">3</span></div>
+  
+  <div id="controls">
+    <p>W/↑: Forward | S/↓: Backward | A/←: Turn Left | D/→: Turn Right</p>
+    <p>Space: Shoot | Q/Shift: Descend | E/Ctrl: Ascend | H: Toggle Controls</p>
+  </div>
+  
+  <!-- Simple error handler to show errors on screen -->
+  <script>
+    window.addEventListener('error', function(event) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'absolute';
+      errorDiv.style.top = '10px';
+      errorDiv.style.left = '10px';
+      errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+      errorDiv.style.color = 'white';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.zIndex = '9999';
+      errorDiv.style.maxWidth = '80%';
+      errorDiv.style.maxHeight = '80%';
+      errorDiv.style.overflow = 'auto';
+      errorDiv.innerHTML = `<h3>Error:</h3><pre>${event.error?.stack || event.message}</pre>`;
+      document.body.appendChild(errorDiv);
+    });
+  </script>
+  
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
