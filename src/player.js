@@ -1,368 +1,299 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { createProceduralDragon } from './dragon_model.js';
 
-// Create a detailed dragon model
-function createDetailedDragon(color = 0xFF0000) {
-  const group = new THREE.Group();
-  
-  // Body - more elongated and streamlined
-  const bodyGeometry = new THREE.CapsuleGeometry(1.2, 6, 8, 16);
-  const bodyMaterial = new THREE.MeshStandardMaterial({ 
-    color: color,
-    roughness: 0.7,
-    metalness: 0.3,
-    flatShading: false
-  });
-  const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-  body.castShadow = true;
-  body.position.y = 0;
-  group.add(body);
-  
-  // Neck - separate from body for more realistic shape
-  const neckGeometry = new THREE.CapsuleGeometry(0.9, 3, 8, 8);
-  neckGeometry.rotateX(Math.PI / 6); // Angle the neck upward slightly
-  const neckMaterial = new THREE.MeshStandardMaterial({ 
-    color: adjustColor(color, 0.95),
-    roughness: 0.7,
-    metalness: 0.3
-  });
-  const neck = new THREE.Mesh(neckGeometry, neckMaterial);
-  neck.position.z = -4;
-  neck.position.y = 0.5;
-  group.add(neck);
-  
-  // Head - more detailed with features
-  const headGroup = new THREE.Group();
-  const headGeometry = new THREE.SphereGeometry(1.2, 12, 12);
-  const headMaterial = new THREE.MeshStandardMaterial({ 
-    color: adjustColor(color, 0.9),
-    roughness: 0.6,
-    metalness: 0.3
-  });
-  const head = new THREE.Mesh(headGeometry, headMaterial);
-  headGroup.add(head);
-  
-  // Snout
-  const snoutGeometry = new THREE.ConeGeometry(0.7, 2, 8);
-  snoutGeometry.rotateX(-Math.PI / 2);
-  const snoutMaterial = new THREE.MeshStandardMaterial({ 
-    color: adjustColor(color, 0.85),
-    roughness: 0.7,
-    metalness: 0.2
-  });
-  const snout = new THREE.Mesh(snoutGeometry, snoutMaterial);
-  snout.position.z = -1.2;
-  headGroup.add(snout);
-  
-  // Horns
-  const hornGeometry = new THREE.ConeGeometry(0.2, 1.5, 8);
-  const hornMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0xAAAAAA,
-    roughness: 0.6,
-    metalness: 0.8
-  });
-  
-  const leftHorn = new THREE.Mesh(hornGeometry, hornMaterial);
-  leftHorn.position.set(-0.6, 0.7, -0.2);
-  leftHorn.rotation.set(Math.PI / 4, 0, -Math.PI / 8);
-  headGroup.add(leftHorn);
-  
-  const rightHorn = new THREE.Mesh(hornGeometry, hornMaterial);
-  rightHorn.position.set(0.6, 0.7, -0.2);
-  rightHorn.rotation.set(Math.PI / 4, 0, Math.PI / 8);
-  headGroup.add(rightHorn);
-  
-  // Eyes
-  const eyeGeometry = new THREE.SphereGeometry(0.2, 8, 8);
-  const eyeMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0x00FF00,
-    roughness: 0.1,
-    metalness: 0.9,
-    emissive: 0x003300
-  });
-  
-  const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-  leftEye.position.set(-0.6, 0.2, -0.9);
-  headGroup.add(leftEye);
-  
-  const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-  rightEye.position.set(0.6, 0.2, -0.9);
-  headGroup.add(rightEye);
-  
-  // Position head
-  headGroup.position.z = -6;
-  headGroup.position.y = 0.8;
-  group.add(headGroup);
-  
-  // Wings - more intricate with detail
-  const wingGroup = createDetailedWing(color);
-  const leftWing = wingGroup.clone();
-  leftWing.position.set(-1.5, 0.5, 0);
-  leftWing.rotation.y = Math.PI / 8;
-  leftWing.rotation.z = -Math.PI / 8;
-  leftWing.name = "leftWing";
-  group.add(leftWing);
-  
-  const rightWing = wingGroup.clone();
-  rightWing.scale.x = -1; // Mirror
-  rightWing.position.set(1.5, 0.5, 0);
-  rightWing.rotation.y = -Math.PI / 8;
-  rightWing.rotation.z = Math.PI / 8;
-  rightWing.name = "rightWing";
-  group.add(rightWing);
-  
-  // Tail - multi-segmented for animation
-  const tailSegments = 5;
-  let previousSegment = body;
-  let tailWidth = 0.8;
-  
-  for (let i = 0; i < tailSegments; i++) {
-    const segmentSize = 1.2 - (i * 0.2);
-    const segmentLength = 2 - (i * 0.3);
-    const segmentGeometry = new THREE.CapsuleGeometry(segmentSize * tailWidth, segmentLength, 8, 8);
-    segmentGeometry.rotateX(Math.PI / 2);
-    
-    const segmentMaterial = new THREE.MeshStandardMaterial({ 
-      color: adjustColor(color, 0.9 - (i * 0.05)),
-      roughness: 0.7,
-      metalness: 0.3
-    });
-    
-    const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
-    // Position based on the previous segment
-    segment.position.z = previousSegment.position.z + 2 + (i * 0.5);
-    segment.position.y = previousSegment.position.y - (i * 0.1);
-    segment.castShadow = true;
-    group.add(segment);
-    
-    previousSegment = segment;
-  }
-  
-  // Add spikes along back
-  for (let i = 0; i < 7; i++) {
-    const spikeHeight = 0.5 + (i < 3 ? 0 : (6 - i) * 0.1);
-    const spikeGeometry = new THREE.ConeGeometry(0.2, spikeHeight, 4);
-    const spikeMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xAAAAAA,
-      roughness: 0.6,
-      metalness: 0.7
-    });
-    
-    const spike = new THREE.Mesh(spikeGeometry, spikeMaterial);
-    spike.position.z = -3 + (i * 1.5);
-    spike.position.y = 1.2 - (i * 0.1);
-    group.add(spike);
-  }
-  
-  // Add flame effect to mouth
-  const flameGeometry = new THREE.ConeGeometry(0.3, 1, 8);
-  flameGeometry.rotateX(Math.PI);
-  const flameMaterial = new THREE.MeshBasicMaterial({ 
-    color: 0xFF6600,
-    transparent: true,
-    opacity: 0.7
-  });
-  const flame = new THREE.Mesh(flameGeometry, flameMaterial);
-  flame.position.z = -7.5;
-  flame.position.y = 0.8;
-  flame.userData = { isFlame: true };
-  group.add(flame);
-  
-  // Make the dragon smaller overall to take up less screen space
-  group.scale.set(0.7, 0.7, 0.7);
-  
-  return group;
-}
+// Removed local texture loading as it is now in dragon_model.js
+// Removed old createDetailedDragon function entirely
 
-// Helper to create a more detailed wing
-function createDetailedWing(color) {
-  const wingGroup = new THREE.Group();
-  
-  // Wing frame (bone structure)
-  const frameGeometry = new THREE.BoxGeometry(0.2, 0.2, 10);
-  frameGeometry.rotateY(Math.PI / 2);
-  const frameMaterial = new THREE.MeshStandardMaterial({ 
-    color: adjustColor(color, 0.7),
-    roughness: 0.7,
-    metalness: 0.3
-  });
-  const mainFrame = new THREE.Mesh(frameGeometry, frameMaterial);
-  wingGroup.add(mainFrame);
-  
-  // Secondary frames
-  for (let i = 1; i < 5; i++) {
-    const secondaryLength = 8 - (i * 1.5);
-    const secondaryGeometry = new THREE.BoxGeometry(0.15, 0.15, secondaryLength);
-    secondaryGeometry.rotateZ(Math.PI / 8 * i);
-    const secondaryFrame = new THREE.Mesh(secondaryGeometry, frameMaterial);
-    secondaryFrame.position.set(0, 0, i * 2);
-    wingGroup.add(secondaryFrame);
-  }
-  
-  // Wing membrane
-  const membraneGeometry = new THREE.CircleGeometry(5, 16, 0, Math.PI / 2);
-  membraneGeometry.rotateY(Math.PI / 2);
-  membraneGeometry.rotateZ(Math.PI / 2);
-  
-  const membraneMaterial = new THREE.MeshStandardMaterial({ 
-    color: adjustColor(color, 0.6),
-    transparent: true,
-    opacity: 0.9,
-    side: THREE.DoubleSide,
-    roughness: 0.6,
-    metalness: 0.1
-  });
-  
-  const membrane = new THREE.Mesh(membraneGeometry, membraneMaterial);
-  membrane.position.z = 5;
-  wingGroup.add(membrane);
-  
-  return wingGroup;
-}
-
-// Helper to adjust color brightness
-function adjustColor(color, factor) {
-  const c = new THREE.Color(color);
-  c.r *= factor;
-  c.g *= factor;
-  c.b *= factor;
-  return c;
-}
 
 export async function createPlayer(scene, loadingManager) {
   // Create player object
   const player = {
-    model: createDetailedDragon(0xFF0000),
-    speed: 1.0,
-    rotationSpeed: 0.03,
+    model: createProceduralDragon(0xFF0000),
+    // Physics properties
     velocity: new THREE.Vector3(),
-    direction: new THREE.Vector3(0, 0, -1),
+    speed: 0,
+    maxSpeed: 2.0,
+    minSpeed: 0.5,
+    acceleration: 0.05,
+    drag: 0.02,
+
+    // Orientation physics
+    pitch: 0,
+    yaw: 0,
+    roll: 0,
+
+    // Control sensitivities
+    pitchRate: 0.01,
+    rollRate: 0.015,
+    yawRateFromRoll: 0.005, // How much banking causes turning
+
+    // Auto-leveling
+    stablizationRate: 0.01, // Slower auto-leveling
+
     boundingBox: new THREE.Box3(),
-    animationTime: 0
+    animationTime: 0,
+    health: 100,
+    maxHealth: 100,
+    raycaster: new THREE.Raycaster()
   };
-  
+
   // Configure dragon model
-  player.model.position.set(0, 200, 0);
-  player.model.scale.set(1.5, 1.5, 1.5);
+  player.model.position.set(0, 300, 0);
+  player.model.scale.set(0.8, 0.8, 0.8); // Adjust scale for new model
   player.model.castShadow = true;
   player.boundingBox.setFromObject(player.model);
-  
+
+  // Re-attach flame to the new head location
+  // Find head group and attach flame
+  // The new model has a 'mouthMount' object for this
+  let mouthMount = null;
+  player.model.traverse(child => {
+    if (child.name === 'mouthMount') mouthMount = child;
+  });
+
+  if (mouthMount) {
+    const flameGeo = new THREE.ConeGeometry(0.4, 2.0, 8);
+    flameGeo.rotateX(Math.PI / 2);
+    const flameMat = new THREE.MeshBasicMaterial({
+      color: 0xFF4400,
+      transparent: true,
+      opacity: 0.0
+    });
+    const flame = new THREE.Mesh(flameGeo, flameMat);
+    flame.name = "flame";
+    flame.userData = { isFlame: true };
+    flame.position.set(0, 0, 0); // At mount point
+    mouthMount.add(flame);
+  }
+
   scene.add(player.model);
-  
+
   // Signal loading complete after a small delay to simulate loading
   setTimeout(() => {
     if (loadingManager) {
       loadingManager.itemEnd('player');
     }
   }, 500);
-  
+
   // Start tracking the item
   if (loadingManager) {
     loadingManager.itemStart('player');
   }
-  
+
   return player;
 }
 
-export function updatePlayer(player, keys, camera) {
-  // Handle movement
-  const moveSpeed = player.speed;
-  const rotateSpeed = player.rotationSpeed;
-  
-  // Forward/backward movement
+export function updatePlayer(player, keys, camera, terrain) {
+  // --- FLIGHT PHYSICS ---
+
+  // 1. Handle Inputs (Control Orientation Rates)
+
+  // Pitch (W/S) - Nose Up/Down
   if (keys['w'] || keys['ArrowUp']) {
-    player.velocity.z = -moveSpeed;
+    player.pitch = Math.max(player.pitch - player.pitchRate, -Math.PI / 3);
   } else if (keys['s'] || keys['ArrowDown']) {
-    player.velocity.z = moveSpeed;
+    player.pitch = Math.min(player.pitch + player.pitchRate, Math.PI / 3);
   } else {
-    player.velocity.z *= 0.95; // Slow down gradually
+    // Auto-level pitch slowly if no input
+    player.pitch *= (1.0 - player.stablizationRate);
   }
-  
-  // Turning left/right
+
+  // Roll (A/D) - Bank Left/Right
   if (keys['a'] || keys['ArrowLeft']) {
-    player.model.rotation.y += rotateSpeed;
+    player.roll = Math.min(player.roll + player.rollRate, Math.PI / 2.5);
   } else if (keys['d'] || keys['ArrowRight']) {
-    player.model.rotation.y -= rotateSpeed;
-  }
-  
-  // Up/down movement
-  if (keys['q'] || keys['Q'] || keys['Shift']) {
-    player.velocity.y = -moveSpeed; // Down
-  } else if (keys['e'] || keys['E'] || keys['Control']) {
-    player.velocity.y = moveSpeed; // Up
+    player.roll = Math.max(player.roll - player.rollRate, -Math.PI / 2.5);
   } else {
-    player.velocity.y *= 0.95; // Slow down gradually
+    // Auto-level roll
+    player.roll *= (1.0 - player.stablizationRate);
   }
-  
-  // Apply velocity in the direction the dragon is facing
-  const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(player.model.quaternion);
-  player.model.position.x += player.velocity.z * direction.x;
-  player.model.position.z += player.velocity.z * direction.z;
-  player.model.position.y += player.velocity.y;
-  
-  // Prevent flying below ground level
-  if (player.model.position.y < 50) {
-    player.model.position.y = 50;
-    player.velocity.y = 0;
+
+  // Yaw (Induced by Roll)
+  // Banking causes precise turning
+  player.yaw += player.roll * player.yawRateFromRoll;
+
+  // 2. Calculate Thrust & Momentum
+
+  // Thrust is automatic based on Pitch for now (Dive to gain speed, climb to lose it)
+  // Simplified: Base thrust + gravity influence
+  const gravityComponent = Math.sin(player.pitch) * 0.05; // Diving adds speed
+  let targetSpeed = 1.5 - (player.pitch * 0.5); // Fly faster when pitching down
+
+  // Boost input
+  if (keys['Shift']) {
+    targetSpeed += 1.0;
   }
-  
+
+  // Accelerate/Decelerate towards target speed (Inertia)
+  player.speed += (targetSpeed - player.speed) * 0.02;
+  player.speed = Math.max(player.minSpeed, Math.min(player.speed, player.maxSpeed * 1.5));
+
+  // 3. Update Position & Orientation
+
+  // Apply rotation to model Quaternion
+  const quaternion = new THREE.Quaternion();
+  quaternion.setFromEuler(new THREE.Euler(player.pitch, player.yaw, player.roll, 'YXZ'));
+  player.model.quaternion.slerp(quaternion, 0.1); // Smooth rotation
+
+  // Calculate forward vector based on actual orientation
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.model.quaternion);
+
+  // Move player
+  player.velocity.copy(forward).multiplyScalar(player.speed);
+  player.model.position.add(player.velocity);
+
+  // 4. Procedural & Environmental Corrections
+
+  // TERRAIN COLLISION
+  if (terrain) {
+    // A. Downward Ray (Altitude Check)
+    const rayOrigin = player.model.position.clone();
+    rayOrigin.y += 100; // Start higher to catch mountains below
+    player.raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
+
+    // Check intersection with terrain group children
+    const intersects = player.raycaster.intersectObjects(terrain.children, true);
+
+    if (intersects.length > 0) {
+      const hit = intersects[0];
+      const terrainHeight = hit.point.y;
+      const cruiseAltitude = 20; // Min height above ground
+
+      if (player.model.position.y < terrainHeight + cruiseAltitude) {
+        // Impact with ground!
+
+        // Bounce logic
+        player.model.position.y = terrainHeight + cruiseAltitude;
+
+        // Bounce up
+        player.pitch = Math.max(player.pitch + 0.3, 0.3); // Pitch up
+        player.speed *= 0.8; // Lose speed
+      }
+    }
+
+    // B. Forward Ray (Frontal Crash Check)
+    const forwardRay = forward.clone().normalize();
+    const nosePos = player.model.position.clone();
+    player.raycaster.set(nosePos, forwardRay);
+    player.raycaster.far = 20 + player.speed * 10; // Look ahead based on speed
+
+    const forwardIntersects = player.raycaster.intersectObjects(terrain.children, true);
+
+    if (forwardIntersects.length > 0) {
+      const hit = forwardIntersects[0];
+      if (hit.distance < 20) {
+        // CRASH into wall!
+        // Reflect velocity
+        // Simple bounce: reverse velocity and push back
+        player.speed *= -0.5; // Bounce back
+        player.velocity.multiplyScalar(-1);
+        player.model.position.add(forwardRay.multiplyScalar(-5)); // Push back out of wall
+
+        // Take heavy damage
+        player.health -= 20;
+        console.log("CRASH! Health:", player.health);
+      }
+    }
+  }
+
+  // Prevent flying below ground level (Fallback)
+  const terrainLimit = 60; // Sea levelish
+  if (player.model.position.y < terrainLimit) {
+    player.model.position.y = terrainLimit;
+
+    // Level out if hitting ground
+    player.pitch = Math.max(player.pitch, 0);
+    player.roll *= 0.8;
+  }
+
   // Keep player within terrain bounds
-  const bounds = 1400;
-  player.model.position.x = Math.max(-bounds, Math.min(bounds, player.model.position.x));
-  player.model.position.z = Math.max(-bounds, Math.min(bounds, player.model.position.z));
-  
-  // Keep player within height limits 
-  if (player.model.position.y > 600) {
-    player.model.position.y = 600;
-    player.velocity.y = 0;
+  const bounds = 1800;
+  if (Math.abs(player.model.position.x) > bounds) {
+    player.yaw += Math.PI; // Turn back
+    player.model.position.x = Math.sign(player.model.position.x) * bounds;
   }
-  
+  if (Math.abs(player.model.position.z) > bounds) {
+    player.yaw += Math.PI;
+    player.model.position.z = Math.sign(player.model.position.z) * bounds;
+  }
+
+  // Height limit
+  const ceilLimit = 800;
+  if (player.model.position.y > ceilLimit) {
+    player.model.position.y = ceilLimit;
+    player.pitch = Math.min(player.pitch, 0);
+  }
+
+  // --- PROCEDURAL ANIMATION ---
+
   // Update animation time
-  player.animationTime += 0.05;
-  
-  // Animate wings based on speed
-  const wingFlapSpeed = Math.max(0.1, Math.abs(player.velocity.z) * 0.5);
-  const flapAmount = Math.sin(player.animationTime * wingFlapSpeed) * 0.2;
-  
+  player.animationTime += 0.05 + (player.speed * 0.05);
+
+  // Bobbing / Undulation
+  // Body rises and falls with wing beats
+  const wingCycle = Math.sin(player.animationTime);
+  const bobAmplitude = 0.5 * (player.speed / player.maxSpeed);
+
+  // We apply bobbing to the visuals only, not physics position
+  // Actually, we can just add a subtle Y offset to the model mesh children, 
+  // or just oscillate the main group if we accept it affects camera slightly (which adds realism)
+  // Let's affect the whole group for that "riding a beast" feel
+  player.model.position.y += Math.sin(player.animationTime * 2) * 0.2;
+
+  // Animate wings
+  const flapRange = Math.PI / 4;
+  const flapOffset = Math.sin(player.animationTime) * flapRange;
+
   // Find wing components and animate them
   player.model.traverse(child => {
     // Wings rotate on Z axis
     if (child.name === 'leftWing') {
-      child.rotation.z = -Math.PI / 8 + flapAmount;
+      // Flap + Bank adjustment (lift wing when banking)
+      child.rotation.z = -Math.PI / 8 + flapOffset + (player.roll * 0.5);
     } else if (child.name === 'rightWing') {
-      child.rotation.z = Math.PI / 8 - flapAmount;
+      child.rotation.z = Math.PI / 8 - flapOffset + (player.roll * 0.5);
     }
-    
+
     // Animate flame
     if (child.userData && child.userData.isFlame) {
-      // Make flame flicker
       child.material.opacity = 0.5 + Math.random() * 0.3;
-      child.scale.set(
-        0.9 + Math.random() * 0.2,
-        0.9 + Math.random() * 0.2,
-        0.9 + Math.random() * 0.2
-      );
+      // Flame trails behind based on speed
+      child.rotation.x = player.speed * 0.5;
+      child.scale.setScalar(0.9 + Math.random() * 0.2);
     }
   });
-  
-  // Update camera to follow player from farther away with a better view angle
-  // Higher and further back position to see more of the landscape and other dragons
-  const offset = new THREE.Vector3(0, 15, 35).applyQuaternion(player.model.quaternion);
-  camera.position.copy(player.model.position).add(offset);
-  
-  // Adjust lookAt to be slightly ahead of the player to see more of the landscape
-  const lookAtPoint = player.model.position.clone().add(
-    new THREE.Vector3(0, -5, 0).applyQuaternion(player.model.quaternion)
+
+  // --- CAMERA UPDATE ---
+
+  // Camera follows with Lag for "Swoop" effect
+  // Ideal position: Behind and slightly above, looking forward
+  const cameraOffset = new THREE.Vector3(0, 12, 30);
+
+  // Add some dynamic offset based on turn
+  // When turning left, camera shifts right slightly to look into turn
+  cameraOffset.x -= player.roll * 10;
+
+  // Apply offset relative to player YAW only (so camera doesn't roll with player)
+  const cameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, player.yaw, 0));
+  const worldOffset = cameraOffset.clone().applyQuaternion(cameraRotation);
+
+  const targetCamPos = player.model.position.clone().add(worldOffset);
+
+  // Smoothly interpolate camera position (Lag)
+  camera.position.lerp(targetCamPos, 0.1);
+
+  // Look slightly ahead of player
+  const lookTarget = player.model.position.clone().add(
+    new THREE.Vector3(0, 0, -50).applyQuaternion(player.model.quaternion)
   );
-  camera.lookAt(lookAtPoint);
-  
+  camera.lookAt(lookTarget);
+
   // Update bounding box
-  // Make the bounding box slightly smaller than the visual model for better gameplay
   const boundingBoxScale = 0.7;
   const tempBox = new THREE.Box3().setFromObject(player.model);
   const size = tempBox.getSize(new THREE.Vector3());
   const center = tempBox.getCenter(new THREE.Vector3());
-  
+
   player.boundingBox.setFromCenterAndSize(
     center,
     size.multiplyScalar(boundingBoxScale)
